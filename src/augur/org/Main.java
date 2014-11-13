@@ -7,6 +7,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
+import com.amazonaws.services.elasticmapreduce.model.AddJobFlowStepsRequest;
+import com.amazonaws.services.elasticmapreduce.model.AddJobFlowStepsResult;
+import com.amazonaws.services.elasticmapreduce.model.HadoopJarStepConfig;
+import com.amazonaws.services.elasticmapreduce.model.StepConfig;
+import com.amazonaws.services.elasticmapreduce.util.StepFactory;
+
 public class Main {
 
 	/**
@@ -36,12 +46,11 @@ public class Main {
 			// 1, 2 later
 			
 			List<String> movieList = new ArrayList<String>();
+			
 			movieList.add("American Hustle");
 			
 			// 3
 			String cmd = "java -jar Youtube.jar";
-//			List<String> cmd = new ArrayList<String>(Arrays.asList("/bin/bash", "java", "-jar ", "YouTube.jar"));
-//			List<String> cmd = new ArrayList<String>(Arrays.asList("/bin/bash", "-c", "touch", "asdasdasd.txt"));
 			for(String movie : movieList) {
 				cmd = cmd + " " + movie;
 			}
@@ -67,9 +76,13 @@ public class Main {
 			}
 			try {
 				Process p = Runtime.getRuntime().exec(cmd);
+				p.waitFor();
 			} catch (IOException e) {
 				System.out.println("Error in RT: " + e.getMessage());
 				return;
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			cmd = "java -jar Twitter.jar";
 			for(String movie : movieList) {
@@ -77,12 +90,41 @@ public class Main {
 			}
 			try {
 				Process p = Runtime.getRuntime().exec(cmd);
+				p.waitFor();
 			} catch (IOException e) {
 				System.out.println("Error in Twitter: " + e.getMessage());
 				return;
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			
 			// 4
+			AWSCredentials credentials = null;
+			try {
+			    credentials = new PropertiesCredentials(
+			        Main.class.getResourceAsStream("AwsCredentials.properties"));
+			} catch (IOException e1) {
+			    System.out.println("Credentials were not properly entered into AwsCredentials.properties.");
+			    System.out.println(e1.getMessage());
+			    System.exit(-1);
+			}
+			
+			AmazonElasticMapReduce client = new AmazonElasticMapReduceClient(credentials);
+
+		    // predefined steps. See StepFactory for list of predefined steps
+		    StepConfig hive = new StepConfig("Hive", new StepFactory().newInstallHiveStep());
+
+		    // A custom step
+		    HadoopJarStepConfig hadoopConfig1 = new HadoopJarStepConfig()
+		        .withJar("s3://augur/bin/mapreduce.jar")
+		        .withArgs("s3://augur/mapreduceInput", "s3://augur/mapReduceOutput"); // optional list of arguments
+		    StepConfig customStep = new StepConfig("Step1", hadoopConfig1);
+
+		    AddJobFlowStepsResult result = client.addJobFlowSteps(new AddJobFlowStepsRequest()
+		        .withJobFlowId("j-1HTE8WKS7SODR")
+		        .withSteps(hive, customStep));
+		    System.out.println(result.getStepIds());
 			
 			
 		} else if (args[0].equals("p")) {
