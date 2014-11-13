@@ -50,6 +50,7 @@ public class Main {
 			movieList.add("American Hustle");
 			
 			// 3
+			/*
 			String cmd = "java -jar Youtube.jar";
 			for(String movie : movieList) {
 				cmd = cmd + " " + movie;
@@ -98,7 +99,7 @@ public class Main {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+			*/
 			// 4
 			AWSCredentials credentials = null;
 			try {
