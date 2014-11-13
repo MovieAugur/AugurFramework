@@ -109,7 +109,7 @@ public class Main {
 			} catch (IOException e1) {
 			    System.out.println("Credentials were not properly entered into AwsCredentials.properties.");
 			    System.out.println(e1.getMessage());
-			    System.exit(-1);
+			    return;
 			}
 			
 			AmazonElasticMapReduce client = new AmazonElasticMapReduceClient(credentials);
