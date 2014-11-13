@@ -39,7 +39,7 @@ public class Main {
 			movieList.add("American Hustle");
 			
 			// 3
-			String cmd = "java -jar YouTube.jar";
+			String cmd = "java -jar Youtube.jar";
 //			List<String> cmd = new ArrayList<String>(Arrays.asList("/bin/bash", "java", "-jar ", "YouTube.jar"));
 //			List<String> cmd = new ArrayList<String>(Arrays.asList("/bin/bash", "-c", "touch", "asdasdasd.txt"));
 			for(String movie : movieList) {
@@ -48,8 +48,7 @@ public class Main {
 			try {
 				String line;
 				Process p = Runtime.getRuntime().exec(cmd);
-				BufferedReader bri = new BufferedReader
-				        (new InputStreamReader(p.getErrorStream()));
+				BufferedReader bri = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 				while ((line = bri.readLine()) != null) {
 			        System.out.println(line);
 			      }
