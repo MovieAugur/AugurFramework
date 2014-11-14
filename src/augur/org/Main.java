@@ -35,7 +35,7 @@ public class Main {
 			// Training mode
 			/*
 			 * Get a list of movies, and compute metrics for movies not in the
-			 * DB.
+			 * DB, and store in the DB.
 			 * 
 			 * 1. Get a list of movies (from wiki or recents). 2. Check in DB
 			 * for each Moviename in list. If movieName in DB, remove it from
@@ -119,8 +119,8 @@ public class Main {
 
 		    // A custom step
 		    HadoopJarStepConfig hadoopConfig1 = new HadoopJarStepConfig()
-		        .withJar("s3://augur/bin/mapreduce.jar")
-		        .withArgs("s3://augur/mapreduceInput", "s3://augur/mapReduceOutput"); // optional list of arguments
+		        .withJar("s3://augurframework/bin/AugurMapreduce.jar")
+		        .withArgs("s3://augurframework/mapreduceInput", "s3://augurframework/mapreduceOutput"); // optional list of arguments
 		    StepConfig customStep = new StepConfig("Step1", hadoopConfig1);
 
 		    AddJobFlowStepsResult result = client.addJobFlowSteps(new AddJobFlowStepsRequest()
