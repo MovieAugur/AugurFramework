@@ -1,5 +1,11 @@
 package augur.org;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +20,9 @@ import com.amazonaws.services.elasticmapreduce.model.RunJobFlowRequest;
 import com.amazonaws.services.elasticmapreduce.model.RunJobFlowResult;
 import com.amazonaws.services.elasticmapreduce.model.StepConfig;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class Main {
 
@@ -41,12 +50,157 @@ public class Main {
 			 * write to S3. 4. Run EMR on the data from S3. 5. Aggregate the
 			 * data and load it in Hive DB.
 			 */
-			// 1, 2 later
+			// 1, 2
 
 			List<String> movieList = new ArrayList<String>();
 
-			movieList.add("American Hustle");
+			AWSCredentials credentials = null;
+			try {
+				credentials = new ProfileCredentialsProvider().getCredentials();
+			} catch (Exception e) {
+				throw new AmazonClientException(
+						"Cannot load credentials from the file", e);
+			}
 
+			AmazonS3Client s3 = new AmazonS3Client(credentials);
+
+			System.out.println("Loading RT JAR...");
+//			File rtJarFile = new File("RottenTomatoes.jar");
+//			s3.getObject(new GetObjectRequest("augurframework",
+//					"bin/RottenTomatoes.jar"), rtJarFile);
+
+			System.out.println("Loading Twitter JAR...");
+			File twitJarFile = new File("twitter.jar");
+			s3.getObject(new GetObjectRequest("augurframework",
+					"bin/twitter.jar"), twitJarFile);
+
+			
+			File file = new File("movieList.txt");
+			for (int year = 2000; year <= 2000; year++) {
+				String s3filename = "trainingmovielist/movies" + year;
+				System.out.println("Retrieving: " + s3filename);
+				GetObjectRequest objReq;
+				try {
+					objReq = new GetObjectRequest("augurframework", s3filename);
+				} catch (Exception e) {
+					continue;
+				}
+
+				ObjectMetadata meta = s3.getObject(objReq, file);
+				movieList.clear();
+				try {
+					movieList = Files.readAllLines(file.toPath(),
+							Charset.defaultCharset());
+					System.out.println(movieList);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+					return;
+				}
+				if (meta != null) {
+					List<String> twitList = new ArrayList<String>(movieList);
+					while (!twitList.isEmpty()) {
+						String twitCmd = "java -jar twitter.jar augurframework mapreduceInput/test";
+						for (int i = 0; i < 5 && !twitList.isEmpty(); i++) {
+							String movie = twitList.remove(0);
+							twitCmd = twitCmd + " " + movie.replaceAll("\\s", "_");
+							System.out.println(movie);
+						}
+						try {
+							boolean fault = false;
+							String line;
+							System.out.println(twitCmd);
+							Process p = Runtime.getRuntime().exec(twitCmd);
+							BufferedReader bri = new BufferedReader(
+									new InputStreamReader(p.getInputStream()));
+							BufferedReader bre = new BufferedReader(
+									new InputStreamReader(p.getErrorStream()));
+							while ((line = bri.readLine()) != null) {
+								System.out.println(line);
+								String error;
+								if((error = bre.readLine()) != null) {
+									System.out.println(error);
+									fault = true;
+									break;
+								}
+							}
+							if (fault) {
+								return;
+							}
+							bre.close();
+							bri.close();
+							p.waitFor();
+						} catch (IOException e) {
+							System.out
+									.println("Error in Twitter: " + e.getMessage());
+							return;
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+							return;
+						}
+						// Sleep 600,000 ms
+						try {
+							System.out.println("Done 1.");
+							Thread.sleep(600000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							return;
+						}
+					}
+					List<String> rtList = new ArrayList<String>(movieList);
+					while (!rtList.isEmpty()) {
+						String rtCmd = "java -jar RottenTomatoes.jar augurframework mapreduceInput/test";
+						for (int i = 0; i < 5 && !rtList.isEmpty(); i++) {
+							String movie = rtList.remove(0);
+							rtCmd = rtCmd + " " + movie.replaceAll("\\s", "_");
+							System.out.println(movie);
+						}
+						try {
+							boolean fault = false;
+							String line;
+							System.out.println(rtCmd);
+							Process p = Runtime.getRuntime().exec(rtCmd);
+							BufferedReader bri = new BufferedReader(
+									new InputStreamReader(p.getInputStream()));
+							BufferedReader bre = new BufferedReader(
+									new InputStreamReader(p.getErrorStream()));
+							while ((line = bri.readLine()) != null) {
+								System.out.println(line);
+								String error;
+								if((error = bre.readLine()) != null) {
+									System.out.println(error);
+									fault = true;
+									break;
+								}
+							}
+							if (fault) {
+								return;
+							}
+							bre.close();
+							bri.close();
+							p.waitFor();
+						} catch (IOException e) {
+							System.out
+									.println("Error in RT: " + e.getMessage());
+							return;
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+							return;
+						}
+						// Sleep 600,000 ms
+						try {
+							System.out.println("Done 1.");
+							Thread.sleep(600000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							return;
+						}
+					}
+				}
+			}
+			System.exit(0);
 			// 3
 			/*
 			 * String cmd = "java -jar Youtube.jar"; for(String movie :
@@ -72,13 +226,6 @@ public class Main {
 			 */
 
 			// 4
-			AWSCredentials credentials = null;
-			try {
-				credentials = new ProfileCredentialsProvider().getCredentials();
-			} catch (Exception e) {
-				throw new AmazonClientException(
-						"Cannot load credentials from the file", e);
-			}
 
 			AmazonElasticMapReduce client = new AmazonElasticMapReduceClient(
 					credentials);
@@ -142,5 +289,4 @@ public class Main {
 					.println("Usage: \"<exec> t\" or \"<exec> p <moviename> [new]\"");
 		}
 	}
-
 }
