@@ -208,6 +208,7 @@ public class Main {
 
 			}
 			System.exit(0);
+		}
 			// 3
 			/*
 			 * String cmd = "java -jar Youtube.jar"; for(String movie :
@@ -233,7 +234,14 @@ public class Main {
 			 */
 
 			// 4
-
+		if(args[0].equals("m")) {
+			AWSCredentials credentials = null;
+			try {
+				credentials = new ProfileCredentialsProvider().getCredentials();
+			} catch (Exception e) {
+				throw new AmazonClientException(
+						"Cannot load credentials from the file", e);
+			}
 			AmazonElasticMapReduce client = new AmazonElasticMapReduceClient(
 					credentials);
 
@@ -247,8 +255,8 @@ public class Main {
 			// A custom step
 			HadoopJarStepConfig hadoopConfig1 = new HadoopJarStepConfig()
 					.withJar("s3://augurframework/bin/AugurMapreduce.jar")
-					.withArgs("s3://augurframework/mapreduceInput",
-							"s3://augurframework/outputs/out7"); // optional
+					.withArgs("s3://augurframework/" + args[1],
+							"s3://augurframework/outputs/" + args[2]); // optional
 																	// list of
 																	// arguments
 			StepConfig customStep = new StepConfig("augurTrain", hadoopConfig1);
