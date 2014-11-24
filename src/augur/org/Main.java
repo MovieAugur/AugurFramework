@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.amazonaws.AmazonClientException;
@@ -33,9 +34,9 @@ public class Main {
 	 *            args[0] mode - 't'/'p' args[1] movie - if 'p' args[2] new
 	 */
 	public static void main(String[] args) {
-		if (args.length < 1 || args.length > 2) {
+		if (args.length < 1) {
 			System.out
-					.println("Usage: \"<exec> t\" or \"<exec> p <moviename> [new]\"");
+					.println("Usage: \"<exec> <t> [<year><skip>]\" or \"<exec> p <moviename> [new]\"");
 			return;
 		}
 		if (args[0].equals("t")) {
@@ -51,7 +52,12 @@ public class Main {
 			 * data and load it in Hive DB.
 			 */
 			// 1, 2
-
+			int year = 2013;
+			int skip = 0;
+			if (args.length > 1) {
+				year = Integer.parseInt(args[1]);
+				skip = Integer.parseInt(args[2]);
+			}
 			List<String> movieList = new ArrayList<String>();
 
 			AWSCredentials credentials = null;
@@ -65,140 +71,141 @@ public class Main {
 			AmazonS3Client s3 = new AmazonS3Client(credentials);
 
 			System.out.println("Loading RT JAR...");
-//			File rtJarFile = new File("RottenTomatoes.jar");
-//			s3.getObject(new GetObjectRequest("augurframework",
-//					"bin/RottenTomatoes.jar"), rtJarFile);
+			File rtJarFile = new File("RottenTomatoes.jar");
+			s3.getObject(new GetObjectRequest("augurframework",
+					"bin/RottenTomatoes.jar"), rtJarFile);
 
 			System.out.println("Loading Twitter JAR...");
 			File twitJarFile = new File("twitter.jar");
 			s3.getObject(new GetObjectRequest("augurframework",
 					"bin/twitter.jar"), twitJarFile);
 
-			
 			File file = new File("movieList.txt");
-			for (int year = 2000; year <= 2000; year++) {
-				String s3filename = "trainingmovielist/movies" + year;
-				System.out.println("Retrieving: " + s3filename);
-				GetObjectRequest objReq;
-				try {
-					objReq = new GetObjectRequest("augurframework", s3filename);
-				} catch (Exception e) {
-					continue;
+
+			String s3filename = "trainingmovielist/movies" + year;
+			System.out.println("Retrieving: " + s3filename);
+			GetObjectRequest objReq;
+			try {
+				objReq = new GetObjectRequest("augurframework", s3filename);
+			} catch (Exception e) {
+				System.out.println("No year data. Aborting!");
+				return;
+			}
+
+			ObjectMetadata meta = s3.getObject(objReq, file);
+			movieList.clear();
+			try {
+				List<String> fullMovieList = Files.readAllLines(file.toPath(),
+						Charset.defaultCharset());
+				movieList = fullMovieList.subList(skip, fullMovieList.size());
+				System.out.println(movieList);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				return;
+			}
+			if (meta != null) {
+//				List<String> rtList = new ArrayList<String>(movieList);
+//				List<String> twitList = new ArrayList<String>(movieList);
+				Iterator<String> rtIter = movieList.iterator();
+				Iterator<String> twIter = movieList.iterator();
+				while (twIter.hasNext()) {
+					String twitCmd = "java -jar twitter.jar augurframework mapreduceInput/train";
+					for (int i = 0; i < 5 && twIter.hasNext(); i++) {
+						String movie = twIter.next();
+						twitCmd = twitCmd + " " + movie.replaceAll("\\s", "_");
+						System.out.println(movie);
+					}
+					try {
+						boolean fault = false;
+						String line;
+						System.out.println(twitCmd);
+						Process p = Runtime.getRuntime().exec(twitCmd);
+						BufferedReader bri = new BufferedReader(
+								new InputStreamReader(p.getInputStream()));
+						BufferedReader bre = new BufferedReader(
+								new InputStreamReader(p.getErrorStream()));
+						while ((line = bri.readLine()) != null) {
+							System.out.println(line);
+							String error;
+							if ((error = bre.readLine()) != null) {
+								System.out.println(error);
+								fault = true;
+								break;
+							}
+						}
+						if (fault) {
+							return;
+						}
+						bre.close();
+						bri.close();
+						p.waitFor();
+					} catch (IOException e) {
+						System.out.println("Error in Twitter: "
+								+ e.getMessage());
+						return;
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						return;
+					}
+					// Sleep 600,000 ms
+					try {
+						System.out.println("Done 1.");
+						Thread.sleep(300000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return;
+					}
+
+					String rtCmd = "java -jar RottenTomatoes.jar augurframework mapreduceInput/train";
+					for (int i = 0; i < 5 && rtIter.hasNext(); i++) {
+						String movie = rtIter.next();
+						rtCmd = rtCmd + " " + movie.replaceAll("\\s", "_");
+						System.out.println(movie);
+					}
+					try {
+						boolean fault = false;
+						String line;
+						System.out.println(rtCmd);
+						Process p = Runtime.getRuntime().exec(rtCmd);
+						BufferedReader bri = new BufferedReader(
+								new InputStreamReader(p.getInputStream()));
+						BufferedReader bre = new BufferedReader(
+								new InputStreamReader(p.getErrorStream()));
+						while ((line = bri.readLine()) != null) {
+							System.out.println(line);
+							String error;
+							if ((error = bre.readLine()) != null) {
+								System.out.println(error);
+								fault = true;
+								break;
+							}
+						}
+						if (fault) {
+							return;
+						}
+						bre.close();
+						bri.close();
+						p.waitFor();
+					} catch (IOException e) {
+						System.out.println("Error in RT: " + e.getMessage());
+						return;
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						return;
+					}
+					// Sleep 600,000 ms
+					try {
+						System.out.println("Done 1.");
+						Thread.sleep(300000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return;
+					}
 				}
 
-				ObjectMetadata meta = s3.getObject(objReq, file);
-				movieList.clear();
-				try {
-					movieList = Files.readAllLines(file.toPath(),
-							Charset.defaultCharset());
-					System.out.println(movieList);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-					return;
-				}
-				if (meta != null) {
-					List<String> twitList = new ArrayList<String>(movieList);
-					while (!twitList.isEmpty()) {
-						String twitCmd = "java -jar twitter.jar augurframework mapreduceInput/test";
-						for (int i = 0; i < 5 && !twitList.isEmpty(); i++) {
-							String movie = twitList.remove(0);
-							twitCmd = twitCmd + " " + movie.replaceAll("\\s", "_");
-							System.out.println(movie);
-						}
-						try {
-							boolean fault = false;
-							String line;
-							System.out.println(twitCmd);
-							Process p = Runtime.getRuntime().exec(twitCmd);
-							BufferedReader bri = new BufferedReader(
-									new InputStreamReader(p.getInputStream()));
-							BufferedReader bre = new BufferedReader(
-									new InputStreamReader(p.getErrorStream()));
-							while ((line = bri.readLine()) != null) {
-								System.out.println(line);
-								String error;
-								if((error = bre.readLine()) != null) {
-									System.out.println(error);
-									fault = true;
-									break;
-								}
-							}
-							if (fault) {
-								return;
-							}
-							bre.close();
-							bri.close();
-							p.waitFor();
-						} catch (IOException e) {
-							System.out
-									.println("Error in Twitter: " + e.getMessage());
-							return;
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-							return;
-						}
-						// Sleep 600,000 ms
-						try {
-							System.out.println("Done 1.");
-							Thread.sleep(600000);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-							return;
-						}
-					}
-					List<String> rtList = new ArrayList<String>(movieList);
-					while (!rtList.isEmpty()) {
-						String rtCmd = "java -jar RottenTomatoes.jar augurframework mapreduceInput/test";
-						for (int i = 0; i < 5 && !rtList.isEmpty(); i++) {
-							String movie = rtList.remove(0);
-							rtCmd = rtCmd + " " + movie.replaceAll("\\s", "_");
-							System.out.println(movie);
-						}
-						try {
-							boolean fault = false;
-							String line;
-							System.out.println(rtCmd);
-							Process p = Runtime.getRuntime().exec(rtCmd);
-							BufferedReader bri = new BufferedReader(
-									new InputStreamReader(p.getInputStream()));
-							BufferedReader bre = new BufferedReader(
-									new InputStreamReader(p.getErrorStream()));
-							while ((line = bri.readLine()) != null) {
-								System.out.println(line);
-								String error;
-								if((error = bre.readLine()) != null) {
-									System.out.println(error);
-									fault = true;
-									break;
-								}
-							}
-							if (fault) {
-								return;
-							}
-							bre.close();
-							bri.close();
-							p.waitFor();
-						} catch (IOException e) {
-							System.out
-									.println("Error in RT: " + e.getMessage());
-							return;
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-							return;
-						}
-						// Sleep 600,000 ms
-						try {
-							System.out.println("Done 1.");
-							Thread.sleep(600000);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-							return;
-						}
-					}
-				}
 			}
 			System.exit(0);
 			// 3
