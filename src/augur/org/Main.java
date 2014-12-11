@@ -327,7 +327,7 @@ public class Main {
 		}
 
 		AmazonS3Client s3 = new AmazonS3Client(credentials);
-//
+
 //		System.out.println("Loading RT JAR...");
 //		File rtJarFile = new File("RottenTomatoes.jar");
 //		s3.getObject(new GetObjectRequest("augurframework",
@@ -344,7 +344,7 @@ public class Main {
 //				ytJarFile);
 //
 //		// Rotten Tomatoes
-//		String rtCmd = "java -jar RottenTomatoes.jar augurframework mapreduceInput/Demo "
+//		String rtCmd = "java -jar RottenTomatoes.jar -info augurframework mapreduceInput/Demo "
 //				+ movieName.replaceAll("\\s", "_");
 //		try {
 //			boolean fault = false;
@@ -563,13 +563,132 @@ public class Main {
 //		}
 		
 //		Rotten Tomatoes Cast Info
-		String rtCastCmd = "java -jar RottenTomatoes.jar -cast augurframework cast "
-				+ movieName.replaceAll("\\s", "_");
+//		String rtCastCmd = "java -jar RottenTomatoes.jar -cast augurframework cast "
+//				+ movieName.replaceAll("\\s", "_");
+//		try {
+//			boolean fault = false;
+//			String line;
+//			System.out.println(rtCastCmd);
+//			Process p = Runtime.getRuntime().exec(rtCastCmd);
+//			BufferedReader bri = new BufferedReader(new InputStreamReader(
+//					p.getInputStream()));
+//			BufferedReader bre = new BufferedReader(new InputStreamReader(
+//					p.getErrorStream()));
+//			while ((line = bri.readLine()) != null) {
+//				System.out.println(line);
+//				String error;
+//				if ((error = bre.readLine()) != null) {
+//					System.out.println(error);
+//					fault = true;
+//					break;
+//				}
+//			}
+//			bre.close();
+//			bri.close();
+//			p.waitFor();
+//			if (fault) {
+//				return;
+//			}
+//		} catch (IOException e) {
+//			System.out.println("Error in RT: " + e.getMessage());
+//			return;
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			return;
+//		}
+//		
+		//Load Starcast
+//		System.out.println("Loading Starcast JAR...");
+//		File starcastFile = new File("Starcast.jar");
+//		s3.getObject(new GetObjectRequest("augurframework",
+//				"bin/Starcast.jar"), starcastFile);
+//		
+//		ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+//		.withBucketName("augurframework")
+//		.withPrefix("cast/");
+//		ObjectListing objectListing;
+//		
+//		System.out.println("Loading Starcast Data...");
+//		File mrFile = new File("cast/starcast.txt");
+//		do {
+//			objectListing = s3.listObjects(listObjectsRequest);
+//			for (S3ObjectSummary objectSummary : 
+//				objectListing.getObjectSummaries()) {
+//				if(objectSummary.getSize() > 0) {
+//					s3.getObject(new GetObjectRequest("augurframework", objectSummary.getKey()),
+//							mrFile);
+//				}
+//				System.out.println( " - " + objectSummary.getKey() + "  " +
+//		                "(size = " + objectSummary.getSize() + 
+//						")");
+//			}
+//			listObjectsRequest.setMarker(objectListing.getNextMarker());
+//		} while (objectListing.isTruncated());
+//		
+//		ListObjectsRequest listObjectsRequestStarMap = new ListObjectsRequest()
+//		.withBucketName("augurframework")
+//		.withPrefix("starmap/");
+//		
+//		//Load starmap data
+//		System.out.println("Loading Starmap Data...");
+//		File starMapFile = new File("starmap");
+//		do {
+//			objectListing = s3.listObjects(listObjectsRequestStarMap);
+//			for (S3ObjectSummary objectSummary : 
+//				objectListing.getObjectSummaries()) {
+//				if(objectSummary.getSize() > 0) {
+//					s3.getObject(new GetObjectRequest("augurframework", objectSummary.getKey()),
+//							starMapFile);
+//				}
+//				System.out.println( " - " + objectSummary.getKey() + "  " +
+//		                "(size = " + objectSummary.getSize() + 
+//						")");
+//			}
+//			listObjectsRequestStarMap.setMarker(objectListing.getNextMarker());
+//		} while (objectListing.isTruncated());
+//		
+//		//Write starpower of movies to file
+//		String starpowerCmd = "java -jar Starcast.jar /Users/shastri/Documents/workspace/AugurFramework/cast "
+//				+ "/Users/shastri/Documents/workspace/AugurFramework/starmap";
+//		try {
+//			boolean fault = false;
+//			String line;
+//			System.out.println(starpowerCmd);
+//			Process p = Runtime.getRuntime().exec(starpowerCmd);
+//			BufferedReader bri = new BufferedReader(new InputStreamReader(
+//					p.getInputStream()));
+//			BufferedReader bre = new BufferedReader(new InputStreamReader(
+//					p.getErrorStream()));
+//			while ((line = bri.readLine()) != null) {
+//				System.out.println(line);
+//				String error;
+//				if ((error = bre.readLine()) != null) {
+//					System.out.println(error);
+//					fault = true;
+//					break;
+//				}
+//			}
+//			bre.close();
+//			bri.close();
+//			p.waitFor();
+//			if (fault) {
+//				return;
+//			}
+//		} catch (IOException e) {
+//			System.out.println("Error in Starpower: " + e.getMessage());
+//			return;
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			return;
+//		}
+		
+		//Load starpower in DB
+		String starpowerloadCmd = "java -jar DB.jar starpower /Users/shastri/Documents/workspace/AugurFramework/starpower.txt";
 		try {
 			boolean fault = false;
 			String line;
-			System.out.println(rtCastCmd);
-			Process p = Runtime.getRuntime().exec(rtCastCmd);
+			System.out.println(starpowerloadCmd);
+			Process p = Runtime.getRuntime().exec(starpowerloadCmd);
 			BufferedReader bri = new BufferedReader(new InputStreamReader(
 					p.getInputStream()));
 			BufferedReader bre = new BufferedReader(new InputStreamReader(
@@ -590,12 +709,11 @@ public class Main {
 				return;
 			}
 		} catch (IOException e) {
-			System.out.println("Error in RT: " + e.getMessage());
+			System.out.println("Error in Starpower Uploader: " + e.getMessage());
 			return;
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return;
 		}
-
 	}
 }
