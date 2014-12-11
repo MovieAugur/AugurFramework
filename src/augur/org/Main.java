@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Map;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -717,17 +718,63 @@ public class Main {
 //		}
 		
 		//Load classification JAR
-		System.out.println("Loading Classifier JAR...");
-		File starcastFile = new File("Classification.jar");
-		s3.getObject(new GetObjectRequest("augurframework",
-				"bin/Classification.jar"), starcastFile);
+//		System.out.println("Loading Classifier JAR...");
+//		File starcastFile = new File("Classification.jar");
+//		s3.getObject(new GetObjectRequest("augurframework",
+//				"bin/Classification.jar"), starcastFile);
+//		
+//		File dbUtilsFile = new File("DatabaseUtils.props");
+//		s3.getObject(new GetObjectRequest("augurframework",
+//				"include/DatabaseUtils.props"), dbUtilsFile);
+//		
+//		File dbconnectFile = new File("mysql-connector-java-3.1.8-bin.jar");
+//		s3.getObject(new GetObjectRequest("augurframework",
+//				"bin/mysql-connector-java-3.1.8-bin.jar"), dbconnectFile);
+				
+//		String wekaCmd = "java -jar Classification.jar";
+//		try {
+//			boolean fault = false;
+//			String line;
+//			System.out.println(wekaCmd);
+//			Process p = Runtime.getRuntime().exec(wekaCmd);
+//			BufferedReader bri = new BufferedReader(new InputStreamReader(
+//					p.getInputStream()));
+//			BufferedReader bre = new BufferedReader(new InputStreamReader(
+//					p.getErrorStream()));
+//			while ((line = bri.readLine()) != null) {
+//				System.out.println(line);
+//				String error;
+//				if ((error = bre.readLine()) != null) {
+//					System.out.println(error);
+//					fault = true;
+//					break;
+//				}
+//			}
+//			bre.close();
+//			bri.close();
+//			p.waitFor();
+////			if (fault) {
+////				return;
+////			}
+//		} catch (IOException e) {
+//			System.out.println("Error in Weka: " + e.getMessage());
+//			return;
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			return;
+//		}
 		
-		String wekaCmd = "java -jar Classification.jar";
+		System.out.println("Loading Predictor JAR...");
+		File predJarFile = new File("Predictor.jar");
+		s3.getObject(new GetObjectRequest("augurframework",
+				"bin/Predictor.jar"), predJarFile);
+		
+		String predCmd = "java -jar Predictor.jar";
 		try {
 			boolean fault = false;
 			String line;
-			System.out.println(wekaCmd);
-			Process p = Runtime.getRuntime().exec(wekaCmd);
+			System.out.println(predCmd);
+			Process p = Runtime.getRuntime().exec(predCmd);
 			BufferedReader bri = new BufferedReader(new InputStreamReader(
 					p.getInputStream()));
 			BufferedReader bre = new BufferedReader(new InputStreamReader(
@@ -748,7 +795,7 @@ public class Main {
 				return;
 			}
 		} catch (IOException e) {
-			System.out.println("Error in Starpower Uploader: " + e.getMessage());
+			System.out.println("Error in Pred: " + e.getMessage());
 			return;
 		} catch (InterruptedException e) {
 			e.printStackTrace();
