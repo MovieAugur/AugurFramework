@@ -683,12 +683,51 @@ public class Main {
 //		}
 		
 		//Load starpower in DB
-		String starpowerloadCmd = "java -jar DB.jar starpower /Users/shastri/Documents/workspace/AugurFramework/starpower.txt";
+//		String starpowerloadCmd = "java -jar DB.jar starpower /Users/shastri/Documents/workspace/AugurFramework/starpower.txt";
+//		try {
+//			boolean fault = false;
+//			String line;
+//			System.out.println(starpowerloadCmd);
+//			Process p = Runtime.getRuntime().exec(starpowerloadCmd);
+//			BufferedReader bri = new BufferedReader(new InputStreamReader(
+//					p.getInputStream()));
+//			BufferedReader bre = new BufferedReader(new InputStreamReader(
+//					p.getErrorStream()));
+//			while ((line = bri.readLine()) != null) {
+//				System.out.println(line);
+//				String error;
+//				if ((error = bre.readLine()) != null) {
+//					System.out.println(error);
+//					fault = true;
+//					break;
+//				}
+//			}
+//			bre.close();
+//			bri.close();
+//			p.waitFor();
+//			if (fault) {
+//				return;
+//			}
+//		} catch (IOException e) {
+//			System.out.println("Error in Starpower Uploader: " + e.getMessage());
+//			return;
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			return;
+//		}
+		
+		//Load classification JAR
+		System.out.println("Loading Classifier JAR...");
+		File starcastFile = new File("Classification.jar");
+		s3.getObject(new GetObjectRequest("augurframework",
+				"bin/Classification.jar"), starcastFile);
+		
+		String wekaCmd = "java -jar Classification.jar";
 		try {
 			boolean fault = false;
 			String line;
-			System.out.println(starpowerloadCmd);
-			Process p = Runtime.getRuntime().exec(starpowerloadCmd);
+			System.out.println(wekaCmd);
+			Process p = Runtime.getRuntime().exec(wekaCmd);
 			BufferedReader bri = new BufferedReader(new InputStreamReader(
 					p.getInputStream()));
 			BufferedReader bre = new BufferedReader(new InputStreamReader(
