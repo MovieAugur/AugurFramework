@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Rsrc-Class-Path: ./ mysql-connector-java-3.1.14-bin.jar
-Class-Path: .
-Rsrc-Main-Class: DBdemo
-Main-Class: org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader
-
